@@ -3,98 +3,479 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DreamGrade - Рейтинг Сна</title>
+    <title>DreamGrade | Ultimate Sleep System</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0A0F1E',
+                        card: '#161E35',
+                        primary: '#4F46E5',
+                        accent: '#06B6D4',
+                        success: '#10B981',
+                        warning: '#F59E0B'
+                    },
+                    boxShadow: {
+                        'neon': '0 0 20px rgba(79, 70, 229, 0.4)',
+                        'neon-success': '0 0 20px rgba(16, 185, 129, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        body { background-color: #0A0F1E; margin: 0; font-family: system-ui, sans-serif; }
-        .glow { shadow-[0_0_20px_rgba(79,70,229,0.4)] }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0A0F1E;
+            color: white;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Кастомный скроллбар */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0A0F1E; }
+        ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 10px; }
+
+        .glass {
+            background: rgba(22, 30, 53, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .active-tab-glow {
+            box-shadow: 0 -4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        /* Анимация кругового прогресса */
+        @keyframes progress {
+            from { stroke-dashoffset: 440; }
+            to { stroke-dashoffset: var(--offset); }
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 6px;
+            background: #1E293B;
+            border-radius: 3px;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #4F46E5;
+            margin-top: -7px;
+            box-shadow: 0 0 10px rgba(79, 70, 229, 0.8);
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect, useMemo } = React;
+        const { motion, AnimatePresence } = FramerMotion;
 
-        const App = () => {
-            const [isLoggedIn, setIsLoggedIn] = useState(false);
+        // --- ИКОНКИ ---
+        const Icon = ({ name, size = 24, className = "" }) => {
+            useEffect(() => {
+                lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
+        };
 
-            if (!isLoggedIn) {
-                return (
-                    <div className="flex flex-col items-center justify-center h-screen bg-[#0A0F1E] p-4 text-center">
-                        <div className="w-20 h-20 bg-indigo-600 rounded-3xl mb-6 flex items-center justify-center shadow-[0_0_30px_rgba(79,70,229,0.5)]">
-                            <span className="text-3xl">🌙</span>
-                        </div>
-                        <h1 className="text-4xl font-bold text-white mb-2">DreamGrade</h1>
-                        <p className="text-slate-400 mb-8 max-w-sm">Система умного контроля сна и игрового рейтинга для вашего здоровья.</p>
-                        <button 
-                            onClick={() => setIsLoggedIn(true)}
-                            className="w-full max-w-xs py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-2xl transition-all shadow-lg active:scale-95"
-                        >
-                            Войти в Систему Снов
-                        </button>
-                    </div>
-                );
-            }
+        // --- КОМПОНЕНТ: КРУГОВОЙ РЕЙТИНГ ---
+        const CircularScore = ({ score }) => {
+            const radius = 70;
+            const circumference = 2 * Math.PI * radius;
+            const offset = circumference - (score / 100) * circumference;
 
             return (
-                <div className="min-h-screen bg-[#0A0F1E] text-white p-6 pb-24">
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <p className="text-slate-400 text-sm">Доброе утро,</p>
-                            <h2 className="text-xl font-bold">Алекс 👋</h2>
-                        </div>
-                        <div className="bg-[#161E35] px-4 py-2 rounded-xl border border-gray-800">
-                            <span className="text-indigo-400 font-bold">LVL 5</span>
-                        </div>
-                    </div>
-
-                    {/* Main Score Widget */}
-                    <div className="bg-[#161E35] rounded-3xl p-8 border border-gray-800 mb-6 text-center shadow-xl">
-                        <p className="text-slate-400 mb-2 uppercase tracking-widest text-xs font-bold">Рейтинг сна</p>
-                        <div className="text-7xl font-black text-white mb-2">88<span className="text-2xl text-indigo-500">/100</span></div>
-                        <div className="inline-block px-4 py-1 bg-emerald-500/10 text-emerald-500 rounded-full text-sm font-bold border border-emerald-500/20">
-                            ОТЛИЧНО
-                        </div>
-                    </div>
-
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 gap-4 mb-8">
-                        <div className="bg-[#161E35] p-5 rounded-2xl border border-gray-800">
-                            <p className="text-slate-400 text-xs mb-1">Сон</p>
-                            <p className="text-xl font-bold">7ч 42м</p>
-                        </div>
-                        <div className="bg-[#161E35] p-5 rounded-2xl border border-gray-800">
-                            <p className="text-slate-400 text-xs mb-1">Глубокий</p>
-                            <p className="text-xl font-bold text-indigo-400">22%</p>
-                        </div>
-                    </div>
-
-                    {/* Blue Light Warning */}
-                    <div className="bg-amber-500/5 border border-amber-500/20 p-4 rounded-2xl mb-8 flex items-start gap-3">
-                        <span className="text-xl">⚠️</span>
-                        <p className="text-sm text-amber-200/80">
-                            <span className="font-bold text-amber-400">Внимание:</span> Обнаружен синий свет после 22:00. Рейтинг XP снижен.
-                        </p>
-                    </div>
-
-                    {/* Bottom Navigation */}
-                    <div className="fixed bottom-6 left-6 right-6 bg-[#161E35]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-2 flex justify-around shadow-2xl">
-                        <button className="p-4 bg-indigo-600 rounded-2xl text-white">📊</button>
-                        <button className="p-4 text-slate-400">⭐</button>
-                        <button className="p-4 text-slate-400">⏰</button>
-                        <button className="p-4 text-slate-400">⚙️</button>
+                <div className="relative flex items-center justify-center w-48 h-48 mx-auto">
+                    <svg className="w-full h-full transform -rotate-90">
+                        <circle
+                            cx="96" cy="96" r={radius}
+                            stroke="currentColor"
+                            strokeWidth="12"
+                            fill="transparent"
+                            className="text-gray-800"
+                        />
+                        <motion.circle
+                            cx="96" cy="96" r={radius}
+                            stroke="currentColor"
+                            strokeWidth="12"
+                            strokeDasharray={circumference}
+                            initial={{ strokeDashoffset: circumference }}
+                            animate={{ strokeDashoffset: offset }}
+                            transition={{ duration: 1.5, ease: "easeOut" }}
+                            fill="transparent"
+                            strokeLinecap="round"
+                            className="text-success drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                        />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-5xl font-black">{score}</span>
+                        <span className="text-success text-xs font-bold tracking-widest mt-1">ОТЛИЧНО</span>
+                        <span className="text-gray-500 text-[10px] mt-1 uppercase">из 100</span>
                     </div>
                 </div>
             );
         };
 
+        // --- КОМПОНЕНТ: КАРТОЧКА СТАТИСТИКИ ---
+        const StatCard = ({ label, value, sub, icon, colorClass = "text-indigo-400" }) => (
+            <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="bg-card p-4 rounded-2xl border border-white/5 flex flex-col gap-2"
+            >
+                <div className="flex items-center gap-2">
+                    <Icon name={icon} size={16} className={colorClass} />
+                    <span className="text-gray-400 text-xs font-semibold">{label}</span>
+                </div>
+                <div className="text-2xl font-bold">{value}</div>
+                <div className="text-[10px] text-gray-500 font-medium uppercase tracking-tighter">{sub}</div>
+            </motion.div>
+        );
+
+        // --- ОСНОВНОЕ ПРИЛОЖЕНИЕ ---
+        const DreamGrade = () => {
+            const [activeTab, setActiveTab] = useState('home');
+            const [isLoaded, setIsLoaded] = useState(false);
+            const [alarmTime, setAlarmTime] = useState({ h: 7, m: 0 });
+
+            useEffect(() => {
+                setTimeout(() => setIsLoaded(true), 500);
+            }, []);
+
+            // Расчет циклов для будильника
+            const sleepCycles = useMemo(() => {
+                const totalMinutes = alarmTime.h * 60 + alarmTime.m;
+                const calculateTime = (minusMinutes) => {
+                    let res = totalMinutes - minusMinutes;
+                    if (res < 0) res += 1440;
+                    const h = Math.floor(res / 60).toString().padStart(2, '0');
+                    const m = (res % 60).toString().padStart(2, '0');
+                    return `${h}:${m}`;
+                };
+                return [
+                    { label: "6 циклов (9ч)", time: calculateTime(540), best: false },
+                    { label: "5 циклов (7.5ч)", time: calculateTime(450), best: true },
+                    { label: "4 цикла (6ч)", time: calculateTime(360), best: false }
+                ];
+            }, [alarmTime]);
+
+            if (!isLoaded) return <div className="h-screen flex items-center justify-center text-indigo-500 animate-pulse">
+                <Icon name="moon" size={48} />
+            </div>;
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen flex flex-col relative overflow-hidden">
+                    
+                    {/* Header */}
+                    <header className="px-6 pt-8 pb-4 flex items-center justify-between sticky top-0 z-20 bg-dark/80 backdrop-blur-md">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-neon">
+                                <Icon name="moon" size={18} />
+                            </div>
+                            <span className="text-xl font-black tracking-tighter italic">Dream<span className="text-primary">Grade</span></span>
+                        </div>
+                        <div className="flex gap-3">
+                            <div className="bg-card px-3 py-1.5 rounded-full border border-white/5 flex items-center gap-2">
+                                <Icon name="flame" size={14} className="text-orange-500" />
+                                <span className="text-xs font-bold text-orange-500">12</span>
+                            </div>
+                            <div className="bg-card px-3 py-1.5 rounded-full border border-white/5 flex items-center gap-2">
+                                <Icon name="zap" size={14} className="text-indigo-400" />
+                                <span className="text-xs font-bold">3 240</span>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content Area */}
+                    <main className="flex-1 px-6 pb-32">
+                        <AnimatePresence mode="wait">
+                            {activeTab === 'home' && (
+                                <motion.div 
+                                    key="home"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    className="space-y-6"
+                                >
+                                    {/* User Profile Info */}
+                                    <div className="bg-card p-5 rounded-3xl border border-white/10 relative overflow-hidden">
+                                        <div className="relative z-10 flex items-center gap-4">
+                                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-cyan-500 flex items-center justify-center text-xl font-bold shadow-lg">АК</div>
+                                            <div className="flex-1">
+                                                <p className="text-gray-400 text-xs">С добрым утром,</p>
+                                                <h2 className="text-xl font-extrabold">Алекс</h2>
+                                                <div className="flex items-center gap-1 mt-1">
+                                                    <Icon name="zap" size={12} className="text-indigo-400" />
+                                                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Сновидец 5 уровня</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="mt-4">
+                                            <div className="flex justify-between text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-widest">
+                                                <span>Прогресс уровня</span>
+                                                <span>3240 / 4000 XP</span>
+                                            </div>
+                                            <div className="w-full h-2 bg-dark rounded-full overflow-hidden border border-white/5">
+                                                <motion.div 
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: '81%' }}
+                                                    transition={{ duration: 1, delay: 0.5 }}
+                                                    className="h-full bg-gradient-to-r from-indigo-600 to-cyan-400 shadow-neon"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Sleep Score Section */}
+                                    <div className="bg-card rounded-[40px] p-8 border border-white/5 shadow-2xl text-center relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-success to-transparent opacity-20"></div>
+                                        <h3 className="text-gray-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">Рейтинг сна сегодня</h3>
+                                        <CircularScore score={88} />
+                                        <div className="grid grid-cols-3 gap-2 mt-8 border-t border-white/5 pt-6">
+                                            <div>
+                                                <div className="text-gray-500 text-[10px] font-bold uppercase mb-1">Отбой</div>
+                                                <div className="font-bold">23:15</div>
+                                            </div>
+                                            <div className="border-x border-white/5">
+                                                <div className="text-gray-500 text-[10px] font-bold uppercase mb-1">Подъём</div>
+                                                <div className="font-bold">06:42</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-gray-500 text-[10px] font-bold uppercase mb-1">Часов</div>
+                                                <div className="font-bold text-indigo-400">7.4</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Detailed Stats Grid */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <StatCard label="Глубокий сон" value="22%" sub="Рекомендуется 20-25%" icon="moon" />
+                                        <StatCard label="REM сон" value="18%" sub="Фаза быстрого сна" icon="activity" colorClass="text-cyan-400" />
+                                        <StatCard label="Пробуждений" value="2" sub="Меньше — лучше" icon="zap" colorClass="text-orange-400" />
+                                        <StatCard label="Стабильность" value="91%" sub="Регулярность отбоя" icon="target" colorClass="text-emerald-400" />
+                                    </div>
+
+                                    {/* Warning Alert */}
+                                    <div className="bg-orange-500/10 border border-orange-500/20 p-5 rounded-3xl flex gap-4">
+                                        <div className="bg-orange-500/20 w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
+                                            <Icon name="alert-triangle" size={20} className="text-orange-500" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-orange-500 text-sm font-bold">Обнаружен синий свет</h4>
+                                            <p className="text-gray-400 text-[11px] mt-1 leading-relaxed">Воздействие синего света после 22:00 зафиксировано. Мелатонин снижен на 18%. XP за ночь уменьшены.</p>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {activeTab === 'alarm' && (
+                                <motion.div 
+                                    key="alarm"
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    className="space-y-6"
+                                >
+                                    <div className="bg-card p-8 rounded-[40px] border border-white/5 text-center">
+                                        <div className="flex items-center justify-center gap-2 mb-6">
+                                            <Icon name="bell" size={16} className="text-primary" />
+                                            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest">Время подъёма</h3>
+                                        </div>
+                                        
+                                        <div className="text-7xl font-black mb-8 tracking-tighter flex justify-center items-baseline gap-2">
+                                            <span className="text-white drop-shadow-[0_0_15px_rgba(79,70,229,0.3)]">
+                                                {alarmTime.h.toString().padStart(2, '0')}
+                                            </span>
+                                            <span className="text-primary animate-pulse">:</span>
+                                            <span className="text-white drop-shadow-[0_0_15px_rgba(79,70,229,0.3)]">
+                                                {alarmTime.m.toString().padStart(2, '0')}
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-6 px-4">
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase">
+                                                    <span>Часы</span>
+                                                    <span>{alarmTime.h}ч</span>
+                                                </div>
+                                                <input 
+                                                    type="range" min="0" max="23" value={alarmTime.h} 
+                                                    onChange={(e) => setAlarmTime({...alarmTime, h: parseInt(e.target.value)})}
+                                                    className="w-full"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase">
+                                                    <span>Минуты</span>
+                                                    <span>{alarmTime.m}м</span>
+                                                </div>
+                                                <input 
+                                                    type="range" min="0" max="55" step="5" value={alarmTime.m} 
+                                                    onChange={(e) => setAlarmTime({...alarmTime, m: parseInt(e.target.value)})}
+                                                    className="w-full"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <h4 className="text-gray-400 text-[10px] font-bold uppercase tracking-widest ml-2">Оптимальное время отбоя</h4>
+                                        {sleepCycles.map((cycle, i) => (
+                                            <div 
+                                                key={i}
+                                                className={`p-5 rounded-3xl border flex items-center justify-between transition-all ${
+                                                    cycle.best ? 'bg-indigo-600/10 border-indigo-500/50 shadow-neon' : 'bg-card border-white/5'
+                                                }`}
+                                            >
+                                                <div>
+                                                    <p className="text-xs font-bold text-gray-400 mb-1">{cycle.label}</p>
+                                                    <p className="text-2xl font-black">{cycle.time}</p>
+                                                </div>
+                                                {cycle.best && (
+                                                    <span className="bg-success text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter shadow-neon-success">Лучший выбор</span>
+                                                )}
+                                                {!cycle.best && <Icon name="clock" size={20} className="text-gray-700" />}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {activeTab === 'quests' && (
+                                <motion.div 
+                                    key="quests"
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="space-y-6"
+                                >
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {[
+                                            { t: "Мастер Режима", i: "shield", d: "5 дней подряд", done: true },
+                                            { t: "Цифровой Детокс", i: "smartphone", d: "Без ТВ за 2ч", done: true },
+                                            { t: "Ранняя Пташка", i: "sun", d: "Подъем до 7:00", done: false },
+                                            { t: "Глубокий Спикер", i: "moon", d: "25% глуб. сна", done: false }
+                                        ].map((badge, i) => (
+                                            <div key={i} className={`p-6 rounded-3xl border text-center ${badge.done ? 'bg-card border-indigo-500/30' : 'bg-card/30 border-white/5 opacity-50'}`}>
+                                                <div className={`w-12 h-12 rounded-2xl mx-auto mb-4 flex items-center justify-center ${badge.done ? 'bg-indigo-600 shadow-neon' : 'bg-gray-800'}`}>
+                                                    <Icon name={badge.i} size={24} />
+                                                </div>
+                                                <p className="text-xs font-bold mb-1">{badge.t}</p>
+                                                <p className="text-[10px] text-gray-500">{badge.d}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="bg-card p-6 rounded-3xl border border-white/5 space-y-4">
+                                        <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-400">Ежедневные квесты</h4>
+                                        {[
+                                            { t: "Пройти 10,000 шагов", xp: "+100 XP", done: true },
+                                            { t: "Не пить кофе после 15:00", xp: "+150 XP", done: true },
+                                            { t: "Лечь спать до 23:30", xp: "+200 XP", done: false }
+                                        ].map((q, i) => (
+                                            <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-dark/50 border border-white/5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-5 h-5 rounded flex items-center justify-center border ${q.done ? 'bg-success border-success' : 'border-gray-600'}`}>
+                                                        {q.done && <Icon name="check" size={12} className="text-dark" />}
+                                                    </div>
+                                                    <span className={`text-sm ${q.done ? 'line-through text-gray-600' : 'text-gray-300'}`}>{q.t}</span>
+                                                </div>
+                                                <span className="text-[10px] font-bold text-indigo-400">{q.xp}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {activeTab === 'stats' && (
+                                <motion.div 
+                                    key="stats"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="space-y-6 text-center py-20"
+                                >
+                                    <div className="w-20 h-20 bg-card rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
+                                        <Icon name="bar-chart-2" size={32} className="text-indigo-500" />
+                                    </div>
+                                    <h3 className="text-xl font-bold">Аналитика недели</h3>
+                                    <p className="text-gray-500 text-sm max-w-xs mx-auto">Здесь будет подробный график циклов вашего сна и корреляция с физической активностью.</p>
+                                    <div className="flex gap-2 justify-center mt-8">
+                                        {[40, 70, 55, 90, 85, 60, 88].map((h, i) => (
+                                            <div key={i} className="w-8 bg-card rounded-t-lg flex items-end h-32 border border-white/5">
+                                                <motion.div 
+                                                    initial={{ height: 0 }}
+                                                    animate={{ height: `${h}%` }}
+                                                    className={`w-full rounded-t-lg shadow-neon ${h > 80 ? 'bg-indigo-500' : 'bg-indigo-500/40'}`}
+                                                ></motion.div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </main>
+
+                    {/* Bottom Navigation */}
+                    <nav className="fixed bottom-6 left-6 right-6 z-50">
+                        <div className="glass rounded-[32px] p-2 flex justify-between items-center shadow-2xl border border-white/10">
+                            {[
+                                { id: 'home', icon: 'home', label: 'Главная' },
+                                { id: 'stats', icon: 'bar-chart-2', label: 'Графики' },
+                                { id: 'quests', icon: 'trophy', label: 'Квесты' },
+                                { id: 'alarm', icon: 'bell', label: 'Сон' }
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`relative flex flex-col items-center gap-1 px-5 py-3 rounded-2xl transition-all duration-300 ${
+                                        activeTab === tab.id ? 'text-white' : 'text-gray-500 hover:text-gray-300'
+                                    }`}
+                                >
+                                    {activeTab === tab.id && (
+                                        <motion.div 
+                                            layoutId="activeTab"
+                                            className="absolute inset-0 bg-primary rounded-2xl -z-10 shadow-neon"
+                                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                        />
+                                    )}
+                                    <Icon name={tab.icon} size={20} />
+                                    <span className="text-[9px] font-bold uppercase tracking-tighter">{tab.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </nav>
+
+                    {/* Background Glows */}
+                    <div className="absolute top-[-10%] left-[-20%] w-[60%] h-[40%] bg-indigo-600/20 blur-[120px] -z-10 rounded-full"></div>
+                    <div className="absolute bottom-[5%] right-[-10%] w-[50%] h-[30%] bg-cyan-500/10 blur-[100px] -z-10 rounded-full"></div>
+                </div>
+            );
+        };
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(<DreamGrade />);
     </script>
 </body>
 </html>
