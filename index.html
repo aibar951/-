@@ -14,13 +14,8 @@
     <div id="root"></div>
 
     <script type="text/babel">
-      import { useState, useEffect, useRef } from "react";
-import {
-  Moon, Sun, Coffee, Smartphone, Zap, Trophy, TrendingUp,
-  AlertTriangle, Star, Shield, Flame, Target, Clock, Thermometer,
-  CheckSquare, Square, Bell, ChevronRight, Activity, Award,
-  BarChart2, Settings, Lock, Eye, Droplets, Wind
-} from "lucide-react";
+      
+
  
 const MOCK_USER = {
   name: "Алекс",
@@ -832,6 +827,8 @@ export default function DreamGrade() {
         
         // ВНИМАНИЕ: Если в коде от Claude есть строки "import ... from 'react'", 
         // просто удалите эти строки (первые 2-3 строчки), так как мы их уже подключили выше.
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<DreamGrade />);
     </script>
 </body>
 </html>
